@@ -1,0 +1,150 @@
+https://www.jianshu.com/p/386f520e5de1
+he SAM Format Specification(sam格式说明)
+1 The SAM Format Specification
+sam是一种序列比对后的输出格式，以tab作为分隔符，包括头部信息和比对信息。其中头部信息必须在比对信息之前。头部信息的开头是@，但是比对行不是。每一个比对行有11个重要的比对信息元素，如果比对位置和校准信息等。
+
+1.1 An example
+FCC0YG3ACXX:2:1103:1572:139769#GCTTAATG 99 chr10 60001 0 90M = 60390 479 GAATTCCTTGAGGCCTAAATGCATCGGGGTGCTCTGGTTTTGTTGTTGTTATTTCTGAATGACATTTACTTTGGTGCTCTTTATTTTGCG CCCFFFFFHHHHHJJJJJJJJIJJJJJJJ?HHGIJJJBFHIJIJIDHIHIEHJJIJJIJJJHHGHHHFFFFFFEDCEEECCDDDDEECDD XT:A:R NM:i:0 SM:i:0 AM:i:0 X0:i:2 X1:i:0 XM:i:0 XO:i:0 XG:i:0 MD:Z:90 XA:Z:chr18,+14415,90M,0; RG:Z:120618_I245_FCC0YG3ACXX_L2_SZAXPI010030-30
+
+悦书PDF截图20181129141256.png
+1.2 Terminologies and Concepts
+1-based coordinate system
+
+从1开始数， SAM, GFF and Wiggle 用的是这个。
+0-based coordinate system
+
+从0开始数， BAM, BED, and PSL用的是这个。
+Phred scale
+
+给一个概率0 < p <= 1 , 值是一个 −10log10p，要做一个四舍五入
+1.3 The header section
+每个标题行以字符“@”开头，后面是两个字母的记录类型代码。在标题中，每一行都是由制表符分隔的，除了@CO行，每个数据字段都遵循格式“TAG:VALUE”，其中TAG是一个两个字母的字符串，定义了内容和值的格式。每个标题行应该匹配:/ ^ @[A-Za-z][A-Za-z](\ t[A-Za-z][A-Za-z0-9]:[- ~]+)+ $ /或/ ^ @CO \ t。* /。包含小写字母的标记保留给最终用户。
+下表给出了定义的记录类型和标记。当记录类型出现时，需要带有“*”的标记。
+
+Tag	Description
+@HD	首行，输出文件的第一行
+VN*	格式版本，接受的格式：/^[0-9]+.[0-9]+$/
+SO	比对排序，有unknown (default), unsorted, queryname and coordinate,对于coordinate，排序的主键是RNAME，其顺序由标题中的@SQ行顺序定义，次要排序键是POS字段。对于RNAME和POS相等的对齐，顺序是任意的。在RNAME字段中，所有带有“*”的对齐都跟随带有其他值的对齐，但是其他的对齐顺序是任意的。
+Tag	Description
+@SQ	参考序列字典，@SQ行的顺序定义了对齐排序顺序。
+SN*	参考序列名字(染色体)。每一个@SQ行必须含有一个去重的SN标签。这个字段的值是用于RNAME和PNEXT比对的记录。正则表达式[!-)+-<>-][!-]*
+LN*	参考序列长度，范围:[1,2,29 -1]
+AS	基因组装配标识符。
+M5	MD5用大写字母校验序列，并去掉gap和空格
+SP	物种
+UR	序列的URI。这个值应该从一个标准的协议开始，e.ghttp:或ftp:，如果不是这些协议作为开始，那么就应该是文件系统路径
+Tag	Description
+@RG	read组，允许有多个无序的@行
+ID*	read组标识符。每一个@RG行必须含有一个去重的ID。ID这个值会被用来作为比对报告的RG标签
+CN	测序中心提供的read名称
+DS	描述
+DT	测序的日期 (ISO8601 date or date/time)
+FO	流的顺序。核苷酸碱基阵列，与每次读取的每个流所使用的核苷酸相对应。多碱基流以IUPAC格式编码，非核苷酸流以各种其他字符编码。格式:/ \ * | ACMGRSVTWYHKDBN + /
+KS	与每次reads的键序列所对应的核苷酸碱基数组
+LB	文库
+PG	产生read组的程序
+PI	预测的中值插入大小
+PL	用于产生reads的平台/技术。Valid values: CAPILLARY, LS454, ILLUMINA, SOLID, HELICOS, IONTORRENT and PACBIO
+PU	平台单元（ Illumina or slide for SOLiD的flowcell-barcode.lane）。惟一标识符。
+SM	样本，用被测序的池命名
+Tag	Description
+@PG	程序
+ID*	程序记录标识符。每个@PG线必须有一个唯一的ID, ID的值用于其他@PG线程的比对PG标签和PP标签。在合并SAM文件以处理冲突时，可以修改PG id。
+PN	程序名字
+CL	命令行
+PP	以前的@PG-ID。必须匹配另一个@PG标题的ID标签。可以使用PP标记链接@PG记录，链中的最后一条记录没有PP标记。该链定义应用于对齐的程序的顺序。在合并SAM文件以处理PG id冲突时，可以修改PP值。链中的第一个PG记录(即SAM记录中的PG标记所引用的记录)描述了在SAM记录上操作的最新程序。链中的下一个PG记录描述了在SAM记录上操作的下一个最新程序。SAM记录上的PG ID不需要引用链中最新的PG记录。它可以引用链中的任何PG记录，这意味着SAM记录已经被PG记录中的程序操作过，并且程序通过PP标记引用。
+VN	程序版本
+@CO	单行的text描述，是一个任意的说明信息。允许多个@CO行无序排列
+1.4 The alignment section: mandatory fields(必填)
+每一个比对行有11个必填选项。这些字段都是以相同顺序出现，而且必须出现，但是这些值可以为0或*（取决于字段）如果无法获得相应的信息。下表概述了SAM格式的强制字段：
+
+Col	Field	Type	Regexp/Range	Brief description
+1	QNAME	String	[!-?A-~]{1,255}	查询模板名称
+2	FLAG	Int	[0,2^16 -1]	位标记，template mapping情况的数字表示，每一个数字代表一种比对情况，这里的值是符合情况的数字相加总和
+3	RNAME	String	*|[!-()+-<>-][!-]*	参考序列名称
+4	POS	Int	[0,2^29 -1]	基于1的最左比对位置
+5	MAPQ	Int	[0,2^8 -1]	MAPping质量
+6	CIGAR	String	*|([0-9]+[MIDNSHPX=])+	CIGAR字符串
+7	RNEXT	String	*|=|[!-()+-<>-][!-]*	比对到的参考（染色体）名字
+8	PNEXT	Int	[0,2^29 -1]	配对到的第一个碱基的位置
+9	TLEN	Int	[-2 29 +1,2 29 -1]	可以理解为文库插入片段长度
+10	SEQ	String	*|[A-Za-z=.]+	序列片段
+11	QUAL	String	[!-~]+	phred -scale基本质量+33的ASCII码
+1.QNAME：查询模板名称。具有相同QNAME的read/片段被认为来自相同的模板。QNAME ' * '表示信息不可用。
+2.FLAG 位标记，下表是每一个代号代表的意义：
+
+Bit	Description
+1	read是pair中的一条（read表示本条read，mate表示pair中的另一条read）
+2	pair一正一负完美的比对上
+4	片段未比对上
+8	mate没有比对上
+16	这条read反向比对
+32	mate反向比对
+64	这条read是read1
+128	这条read是read2
+256	第二次比对
+512	没有通过质量控制
+1024	read是PCR或光学副本产生
+2048	辅助比对结果
+0x4是唯一可靠的告诉我们片段未比对上，如果0x4出现了，RNAME, POS, CIGAR, MAPQ, 0x2, 0x10 和 0x100 和 0x20都是没有的
+如果0x40和0x80都存在，片段就是线性模板的一部分，但是既不是第一部分也不是最后一个部分，如果0x40和0x80都不存在，模板中片段的索引是未知的。这可能发生在非线性模板中，或者索引在数据处理中丢失。
+0x100 意味着片段在某些分析中是不会被用到的。
+如果0x1不存在，0x2, 0x8, 0x20, 0x40 and 0x80也没啥意义
+3.RNAME：比对的参考序列名称，如果@SQ头部行存在，RNAME(如果不是“*”)必须出现在一个 SQ-SN标记中。没比对上此处就是“*”。然而，一个未必对的片段也有一个坐标以便排序。如果RNAME 是“*”，也就没有 POS 和 CIGAR。
+
+4.POS：于1的第一个匹配基的最左映射位置。参考序列中的第一个基的坐标是1。对于没有坐标的未映射读取，POS设置为0。如果POS为0，RNAME和CIGAR也就没有意义。
+
+5.MAPQ：mapping质量，等于−10log 10Pr(映射位置是错的)，四舍五入到最近的整数，值255表示映射质量特别差。
+
+6.CIGAR：CIGAR字符串。下表为CIGAR字符串的解释（‘*’表示无值）
+
+Op	BAM	Description
+M	0	比对匹配(可以是序列匹配或不匹配)
+I	1	插入到参考
+D	2	从参考删除
+N	3	参考的跳过的区域
+S	4	软剪切(被剪切的序列存在于序列中)
+H	5	硬剪切(被剪切的序列不存在于序列中)
+P	6	填充(从填充引用中无声删除)
+=	7	序列匹配
+X	8	序列不匹配
+H 值出现在最初或者最后操作中
+S 可证在他们和CIRAG末尾字符串中只有H操作
+对于mRNA到基因组的比对，一个N操作符代表内含子。对于其他类型的比对，没有定义N的解释。
+M/I/S/=/X操作的长度之和等于SEQ的长度。
+7.RNEXT:：mate的reference sequence name，实际上就是mate比对到的染色体号，若是没有mate，则是*
+
+8.PNEXT：如果没有这个信息（没比对上）就是0
+
+9.TLEN：如果R1端的read和R2端的read能够mapping到同一条Reference序列上（即第三列RNAME相同），则该列的值表示第8列减去第4列加上第6列的值，R1端和R2端相同id的reads其第九列值相同，但该值为一正一负，R1文件的reads和R2文件的reads，相同id的reads要相对来看。在进行该第列值的计算时，如果取第6列的数值，一定要取出现M的值，S或H的值不能取。
+
+10.SEQ：reads片段。如果序列不存在，就是*。如果不是*，这个序列的长度等于CIGAR中 M/I/S/=/X的总和。=表示他的基础字段（如开始为1），和参考序列的基础字段相同。
+
+11.QUAL：碱基质量加33的ASCII码（与Sanger FASTQ格式中的质量字符串相同）。一个碱基质量是基于错误率的phred-scaled等于−10log 10Pr(碱基是错的)。这个字段可以是“*”。如果它不是*，那么seq也不是“*”，它的长度与SEQ的长度得一致。
+
+1.5 The alignment section: optional fields
+这里所有的字段都是依照TAG:TYPE:VALUE的格式， TAG的标记是两个字符，匹配为/[A-Za-z][A-Za-z0-9]/。在一个比对行每个TAG只可以出现一次。一个TAG含有返回给客户的小写字母。
+
+Type	Regexp matching VALUE	Description
+A	[!-~]	可印刷字符
+i	[-+]?[0-9]+	32位整数
+f	[-+]?[0-9]*\.?[0-9]+([eE][-+]?[0-9]+)?	单精度浮点数
+Z	[ !-~]+	可打印字符串，包括空格
+H	[0-9A-F]+	十六进制格式的字节数组
+B	cCsSiIf+	整数或数字数组
+对于整数或数字数组(类型' B ')，第一个字母表示以下逗号分隔数组中的数字类型。TYPE表示TAG对应值的类型，可以是字符串、整数、字节、数组等。
+下表显示了预定义的标记。你可以自由添加新标签，如果你的新标签很有趣，可以给samtools发邮件。请注意，以“X”、“Y”和“Z”开头的标记或任何位置包含小写字母的标记都保留给本地使用，在本规范的任何未来版本中都不会正式定义。
+
+字符	含义
+AS:i	匹配的得分
+XS:i	第二好的匹配的得分
+YS:i	mate 序列匹配的得分
+XN:i	在参考序列上模糊碱基的个数
+XM:i	错配的个数
+XO:i	gap open的个数，针对于比对中的插入和缺失
+XG:i	gap 延伸的个数，针对于比对中的插入和缺失
+NM:i	编辑距离。但是不包含头尾被剪切的序列。一般来说等于序列中error base的个数
+YF:i	该reads被过滤掉的原因。可能为LN(错配数太多，待查证)、NS(read中包含N或者．)、SC(match bonus低于设定的阈值)、QC(failing quality control，待证)
+YT:Z	值为UU表示不是pair中一部分(单末端？)、CP(是pair且可以完美匹配)、DP(是pair但不能很好的匹配)、UP(是pair但是无法比对到参考序列上)
+MD:Z	比对上的错配碱基的字符串表示
+
