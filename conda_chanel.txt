@@ -1,0 +1,10 @@
+##conda config --add channels
+--add channels defaults   # lowest priority
+--add channels bioconda
+--add channels R
+--add channels conda-forge
+--add channels genomedk
+--add channels https://mirrors.tuna.tsinghua.edu.cn/anaconda/pkgs/free/
+--add channels https://mirrors.tuna.tsinghua.edu.cn/anaconda/pkgs/main/
+--add channels https://mirrors.tuna.tsinghua.edu.cn/anaconda/cloud/conda-forge/
+--add channels https://mirrors.tuna.tsinghua.edu.cn/anaconda/cloud/bioconda/   # highest priority
